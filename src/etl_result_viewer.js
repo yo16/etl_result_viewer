@@ -5,11 +5,11 @@ Copyright (c) 2023 yo16
 Released under the MIT license.
 */
 
-const SVG_WIDTH = 700
-const SVG_HEIGHT = 400
-const PADDING = [10, 10, 10, 10]    // top, right, bottom, left
-const TIME_LINE_HEIGHT = 100
-const PROCESS_NAME_COLUMN_WIDTH = 200
+const SVG_WIDTH = 700;
+const SVG_HEIGHT = 400;
+const PADDING = [10, 10, 10, 10];   // top, right, bottom, left
+const TIME_LINE_HEIGHT = 100;
+const PROCESS_NAME_COLUMN_WIDTH = 200;
 
 class EtlResult {
     constructor(dom_id)
@@ -24,8 +24,10 @@ class EtlResult {
             .append('svg')
             .attr('width', SVG_WIDTH)
             .attr('height', SVG_HEIGHT)
+        ;
 
-        this.draw_background(svg)
+        // 背景を描画
+        this.draw_background(svg);
     }
 
     // 背景を描画
