@@ -9,14 +9,15 @@ Released under the MIT license.
 const SVG_WIDTH = 700;
 const SVG_HEIGHT = 400;
 const PADDING = [10, 10, 10, 10];   // top, right, bottom, left
-const TIME_LINE_HEIGHT = 100;
 const PROCESS_NAME_COLUMN_WIDTH = 200;
 
-// ジョブ
+// 日時関連
+// ヘッダー
+const TIME_LINE_HEIGHT = 50;
 // １時間の幅
 const HOUR_WIDTH = 100;
 // 0時以外の開始位置
-const HOUR_BAR_START = TIME_LINE_HEIGHT-60;
+const HOUR_BAR_START = 35;
 
 class EtlResult {
     constructor(dom_id)
@@ -34,115 +35,35 @@ class EtlResult {
             .attr('height', SVG_HEIGHT)
         ;
 
-        // 背景を描画
-        let layer_frame = svg.append('g').attr('id', 'g_frame');
-        this.draw_background(layer_frame);
-
-        // データを描画
-        let layer_time_bar = svg.append('g').attr('id', 'g_time_bar');
-        let layer_date_text = svg.append('g').attr('id', 'g_date_text');
-        this.draw_data(layer_time_bar, layer_date_text, original_data);
-
-        // 位置の入れ替え
-        let move_to_top = (e) => e.node().parentNode.insertBefore(e.node(), null);
-        move_to_top(layer_frame);
-        move_to_top(layer_date_text);
+        // 日時関連のものを描く
+        this.draw_time_line(svg, original_data);
     }
 
-    // 背景を描画
-    draw_background(svg)
+    draw_time_line(top_svg, data)
     {
-        // プロセス名列
-        svg
-            .append('rect')
-            .attr('class', 'rect_side')
-            .attr('x', PADDING[3])
-            .attr('y', PADDING[0] + TIME_LINE_HEIGHT)
-            .attr('width', PROCESS_NAME_COLUMN_WIDTH)
-            .attr('height', SVG_HEIGHT - (PADDING[0]+TIME_LINE_HEIGHT+PADDING[2]))
-            .attr('fill', '#EEEEEE')
-            .attr('opacity', '70%')
-        ;
-        // タイムライン
-        svg
-            .append('rect')
-            .attr('class', 'rect_top')
+        // ここでのsvg
+        let svg = top_svg
+            .append('svg')
+            .attr('id', 'svg_date')
             .attr('x', PADDING[3]+PROCESS_NAME_COLUMN_WIDTH)
             .attr('y', PADDING[0])
-            .attr('width', SVG_WIDTH - (PADDING[3]+PROCESS_NAME_COLUMN_WIDTH+PADDING[1]))
-            .attr('height', TIME_LINE_HEIGHT)
-            .attr('fill', '#EEEEEE')
-            .attr('opacity', '70%')
+            .attr('width', SVG_WIDTH-(PADDING[1]+PROCESS_NAME_COLUMN_WIDTH+PADDING[3]))
+            .attr('height', SVG_HEIGHT-(PADDING[0]+PADDING[2]))
         ;
-        // メインキャンバス
-        let svg_filter_shadow = svg
-            .append('defs')
-            .append('filter')
-            .attr('id', 'inbox_shadow')
-            .attr('x', '-20%')
-            .attr('y', '-20%')
-            .attr('width', '140%')
-            .attr('height', '140%');
-        svg_filter_shadow
-            .append('feOffset')
-            .attr('dx', '0')
-            .attr('dy', '0');
-        svg_filter_shadow
-            .append('feGaussianBlur')
-            .attr('stdDeviation', '5')
-            .attr('result', 'offset-blur');
-        svg_filter_shadow
-            .append('feComposite')
-            .attr('operator', 'out')
-            .attr('in', 'SourceGraphic');
-        svg
-            .append('rect')
-            .attr('class', 'rect_main_canvas')
-            .attr('x', PADDING[3]+PROCESS_NAME_COLUMN_WIDTH)
-            .attr('y', PADDING[0]+TIME_LINE_HEIGHT)
-            .attr('width', SVG_WIDTH - (PADDING[3]+PROCESS_NAME_COLUMN_WIDTH+PADDING[1]))
-            .attr('height', SVG_HEIGHT - (PADDING[0]+TIME_LINE_HEIGHT+PADDING[2]))
-            .attr('fill', '#aaa')
-            .attr('filter', 'url(#inbox_shadow)');
-    }
-
-    // データを描画
-    draw_data(svg_bar, svg_text, original_data)
-    {
+        
         // データの期間を取得
         let min_dt = null, max_dt = null;
-        for (let i=0; i<original_data.length; i++) {
-            let s = new Date(original_data[i].start);
-            let e = new Date(original_data[i].end);
+        for (let i=0; i<data.length; i++) {
+            let s = new Date(data[i].start);
+            let e = new Date(data[i].end);
             if (i===0) {
                 min_dt = s;
                 max_dt = e;
                 continue;
             }
-
             if (s < min_dt) {min_dt = s;}
             if (max_dt < e) {max_dt = e;}
         }
-        // 
-        this.draw_time_line(svg_bar, svg_text, min_dt, max_dt);
-    }
-
-    // タイムラインを描画
-    draw_time_line(svg_bar, svg_text, min_dt, max_dt)
-    {
-        function draw_time_bar1(svg, x, y)
-        {
-            svg
-                .append('line')
-                .attr('x1', x)
-                .attr('x2', x)
-                .attr('y1', y)
-                .attr('y2', SVG_HEIGHT) // はみ出る分はどうせ見えなくなるから計算しない
-                .attr('stroke-width', 1)
-                .attr('stroke', '#666')
-            ;
-        }
-
         // 時に丸める
         min_dt.setMinutes(0);min_dt.setSeconds(0);min_dt.setMilliseconds(0);
         max_dt.setMinutes(0);max_dt.setSeconds(0);max_dt.setMilliseconds(0);
@@ -150,17 +71,74 @@ class EtlResult {
         // 時間の差
         let diff_hours = (max_dt.getTime() - min_dt.getTime())/(60*60*1000);
 
-        // 縦線を描画
-        let tf = svg_bar
-            .append('g')
-            .attr(
-                'transform',
-                'translate('+(PADDING[3]+PROCESS_NAME_COLUMN_WIDTH)+','+PADDING[0]+')'
-            )
-        ;
+        let cur_dt = min_dt;
+        console.log(cur_dt);
+        let dts = [];
         for (let i=0; i<diff_hours; i++) {
-            draw_time_bar1(tf, HOUR_WIDTH*i)
+            cur_dt.setHours(cur_dt.getHours()+1)
+            dts.push(new Date(cur_dt));
+        }
+
+        // 縦線
+        const timeline_bar_g = svg
+            .append('g')
+            .attr('class', 'timeline_bar')
+            .attr('stroke-width', 1)
+            .attr('stroke', '#CCCCCC')
+        ;
+        for (let i=0; i<dts.length; i++) {
+            const x = HOUR_WIDTH*i;
+            timeline_bar_g
+                .append('line')
+                .attr('x1', x+0.5)
+                .attr('x2', x+0.5)
+                .attr('y1', (dts[i].getHours()===0)?0:HOUR_BAR_START)
+                .attr('y2', SVG_HEIGHT-(PADDING[0]+PADDING[2]))
+            ;
+        }
+
+        // rect
+        svg
+            .append('rect')
+            .attr('class', 'rect_top')
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('width', SVG_WIDTH - (PADDING[3]+PROCESS_NAME_COLUMN_WIDTH+PADDING[1]))
+            .attr('height', TIME_LINE_HEIGHT)
+            .attr('fill', '#EEE')
+            .attr('opacity', '70%')
+        ;
+
+        // 文字
+        const timeline_text_g = svg
+            .append('g')
+            .attr('class', 'timeline_text')
+            .attr('stroke-width', 1)
+            .attr('fill', '#999999')
+        ;
+        for (let i=0; i<dts.length; i++) {
+            const x = HOUR_WIDTH*i;
+            if ( dts[i].getHours() === 0 ) {
+                // y/m/d
+                timeline_text_g
+                    .append('text')
+                    .text(dts[i].getFullYear()+'/'+(dts[i].getMonth()+1)+'/'+dts[i].getDay())
+                    .attr('x', x+5)
+                    .attr('y', 18)
+                    .attr('font-size', 10)
+                ;
+            }
+            // h
+            timeline_text_g
+                .append('text')
+                .text(dts[i].getHours())
+                .attr('x', x+5)
+                .attr('y', TIME_LINE_HEIGHT-7)
+                .attr('font-size', 10)
+            ;
         }
 
     }
+
+
 }
