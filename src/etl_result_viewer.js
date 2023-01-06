@@ -98,7 +98,7 @@ class EtlResult {
                 .append('line')
                 .attr('x1', x+0.5)
                 .attr('x2', x+0.5)
-                .attr('y1', (dts[i].getHours()===0)?0:HOUR_BAR_START)
+                .attr('y1', (dts[i].getHours()===0)?8:HOUR_BAR_START)
                 .attr('y2', SVG_HEIGHT-(PADDING[0]+PADDING[2]))
             ;
         }
