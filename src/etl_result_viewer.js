@@ -27,6 +27,7 @@ class EtlResult {
     // データを元に描画
     data(original_data)
     {
+        // トップのSVG
         let svg = d3.select(this.dom_id)
             .append('svg')
             .attr('width', SVG_WIDTH)
