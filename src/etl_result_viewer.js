@@ -39,6 +39,7 @@ class EtlResult {
         this.draw_time_line(svg, original_data);
     }
 
+    // 日時関連の描画
     draw_time_line(top_svg, data)
     {
         // ここでのsvg
