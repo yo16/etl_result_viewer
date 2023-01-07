@@ -314,7 +314,7 @@ class EtlResult {
         // ここでのsvg
         let svg = top_svg
             .append('svg')
-            .attr('id', 'svg_process')
+            .attr('id', 'svg_result')
             .attr('x', PADDING[3])
             .attr('y', PADDING[0] + TIME_LINE_HEIGHT)
             .attr('width', SVG_WIDTH - (PADDING[3]+PADDING[1]))
