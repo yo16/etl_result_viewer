@@ -22,6 +22,9 @@ const HOUR_BAR_START = 35;
 // ヘッダー
 const PROCESS_NAME_COLUMN_WIDTH = 200;
 
+// 結果関連
+
+
 class EtlResult {
     constructor(dom_id)
     {
@@ -47,6 +50,9 @@ class EtlResult {
 
         // プロセス定義関連のものを描く
         this.draw_process_info(svg, data);
+
+        // 結果関連のものを描く
+        this.draw_result(svg, data);
     }
 
     // データの確認と加工
@@ -201,7 +207,7 @@ class EtlResult {
 
     }
 
-    // プロセス定義関連のものを描く
+    // プロセス定義関連の描画
     draw_process_info(top_svg, data)
     {
         // ここでのsvg
@@ -210,7 +216,7 @@ class EtlResult {
             .attr('id', 'svg_process')
             .attr('x', PADDING[3])
             .attr('y', PADDING[0]+TIME_LINE_HEIGHT)
-            .attr('width', SVG_WIDTH-(PADDING[1]+PADDING[3]))
+            .attr('width', PROCESS_NAME_COLUMN_WIDTH)
             .attr('height', SVG_HEIGHT-(PADDING[0]+TIME_LINE_HEIGHT+PADDING[2]))
         ;
         
@@ -242,8 +248,6 @@ class EtlResult {
             .attr('transform', 'scale(0.025)')
             .attr('fill', '#999')
         ;
-
-        // 線
 
         // rect
         svg
@@ -290,5 +294,49 @@ class EtlResult {
         Object.keys(data.data).forEach( (k,i) => {
             draw_one_process(svg, data.data[k], i)
         });
+    }
+
+    // 結果関連の描画
+    draw_result(top_svg, data)
+    {
+        // ここでのsvg
+        let svg = top_svg
+            .append('svg')
+            .attr('id', 'svg_process')
+            .attr('x', PADDING[3] + PROCESS_NAME_COLUMN_WIDTH)
+            .attr('y', PADDING[0] + TIME_LINE_HEIGHT)
+            .attr('width', SVG_WIDTH - (PADDING[3]+PROCESS_NAME_COLUMN_WIDTH+PADDING[1]))
+            .attr('height', SVG_HEIGHT-(PADDING[0]+TIME_LINE_HEIGHT+PADDING[2]))
+        ;
+
+        // 全体のrect
+        let filter = svg
+            .append('filter')
+            .attr('id', 'inner_shadow')
+        filter
+            .append('feOffset')
+            .attr('dx', 0)
+            .attr('dy', 0)
+        ;
+        filter
+            .append('feGaussianBlur')
+            .attr('stdDeviation', 8)
+            .attr('result', 'offset-blur')
+        ;
+        filter
+            .append('feComposite')
+            .attr('operator', 'out')
+            .attr('in', 'SourceGraphic')
+            .attr('in2', 'offset-blur')
+        ;
+        svg
+            .append('rect')
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('width', SVG_WIDTH - (PADDING[3]+PROCESS_NAME_COLUMN_WIDTH+PADDING[1]))
+            .attr('height', SVG_HEIGHT-(PADDING[0]+TIME_LINE_HEIGHT+PADDING[2]))
+            .attr('fill', '#ccc')
+            .attr('filter', 'url(#inner_shadow)')
+        ;
     }
 }
