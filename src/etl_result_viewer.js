@@ -23,6 +23,7 @@ const HOUR_BAR_START = 35;
 const PROCESS_NAME_COLUMN_WIDTH = 200;
 
 // 結果関連
+const RESULT_RECT_HEIGHT = 25;
 
 
 class EtlResult {
@@ -48,11 +49,11 @@ class EtlResult {
         // 日時関連のものを描く
         this.draw_time_line(svg, data);
 
-        // プロセス定義関連のものを描く
-        this.draw_process_info(svg, data);
-
         // 結果関連のものを描く
         this.draw_result(svg, data);
+
+        // プロセス定義関連のものを描く
+        this.draw_process_info(svg, data);
     }
 
     // データの確認と加工
@@ -90,8 +91,8 @@ class EtlResult {
         let diff_hours = (max_dt.getTime() - min_dt.getTime())/(60*60*1000);
         let cur_dt = min_dt;
         for (let i=0; i<diff_hours+1; i++) {
-            cur_dt.setHours(cur_dt.getHours()+1)
             ret_data.hour_units.push(new Date(cur_dt));
+            cur_dt.setHours(cur_dt.getHours()+1)
         }
 
         // dataをオブジェクト型に移し替える
@@ -102,6 +103,11 @@ class EtlResult {
             if (!('parent_id' in original_data[i])) {
                 ret_data.data[original_data[i].id]['parent_id'] = null;
             }
+            // start, endをDate化
+            ret_data.data[original_data[i].id]['start_str'] = ret_data.data[original_data[i].id]['start'];
+            ret_data.data[original_data[i].id]['start'] = new Date(ret_data.data[original_data[i].id]['start']);
+            ret_data.data[original_data[i].id]['end_str'] = ret_data.data[original_data[i].id]['end'];
+            ret_data.data[original_data[i].id]['end'] = new Date(ret_data.data[original_data[i].id]['end']);
         }
 
         // データに階層番号(depth, 0, 1, ...)を付ける
@@ -116,8 +122,13 @@ class EtlResult {
             Object.keys(ret_data.data)
                 .filter( k => ret_data.data[k].parent_id === d.id)  // dが親
                 .forEach( k => {
-                    console.log(k);
                     d['is_parent'] = 1;
+                    if (!('children_num' in d)) {
+                        d['children_num'] = 1;
+                    } else {
+                        d['children_num'] += 1;
+                    }
+
                     ret_data.data[k]['depth'] = d.depth + 1;
                     set_depth(ret_data.data[k]);
                 });
@@ -267,6 +278,7 @@ class EtlResult {
             let cur_g = svg
                 .append('g')
                 .attr('class', 'one_process')
+                .attr('process_id', d.id)
             ;
 
             // アイコン
@@ -285,11 +297,11 @@ class EtlResult {
                 .attr('x', 45 + d.depth * 20)
                 .attr('y', 50 + i * 33)
                 .attr('font-size', 12)
-                .attr('fill', '#333')
+                .attr(
+                    'fill',
+                    (d.status==='ERROR')? '#F33' : '#333'
+                )
             ;
-
-            // 線
-
         }
         Object.keys(data.data).forEach( (k,i) => {
             draw_one_process(svg, data.data[k], i)
@@ -303,11 +315,77 @@ class EtlResult {
         let svg = top_svg
             .append('svg')
             .attr('id', 'svg_process')
-            .attr('x', PADDING[3] + PROCESS_NAME_COLUMN_WIDTH)
+            .attr('x', PADDING[3])
             .attr('y', PADDING[0] + TIME_LINE_HEIGHT)
-            .attr('width', SVG_WIDTH - (PADDING[3]+PROCESS_NAME_COLUMN_WIDTH+PADDING[1]))
+            .attr('width', SVG_WIDTH - (PADDING[3]+PADDING[1]))
             .attr('height', SVG_HEIGHT-(PADDING[0]+TIME_LINE_HEIGHT+PADDING[2]))
         ;
+
+        // 結果
+        Object.keys(data.data).forEach( (k, i) => {
+            const d = data.data[k];
+
+            const cur_g = svg
+                .append('g')
+                .attr('class', 'one_result')
+                .attr('process_id', d.id)
+            ;
+
+            // 開始時刻、終了時刻からx値を取得する
+            const datetime_to_x = (dt) => {
+                // 左端の時刻との差(h)
+                const diff_time_h = (dt.getTime() - data.hour_units[0].getTime()) / (60*60*1000);
+                return HOUR_WIDTH * diff_time_h;
+            };
+            const start_x = datetime_to_x(d.start);
+            const end_x = datetime_to_x(d.end);
+
+            // y位置のベース
+            const base_y = 35 + i * 33;
+            // 色
+            const rect_color = 
+                (d.status === 'SUCCESS') ? '#99f':
+                (d.status === 'ERROR')   ? '#f99':
+                (d.status === 'RUNNING') ? '#fc6':
+                                           '#ccc';
+            if (d.is_parent) {
+                // 処理群のrect
+                cur_g
+                    .append('rect')
+                    .attr('x', PROCESS_NAME_COLUMN_WIDTH + start_x + 0.5)
+                    .attr('y', base_y + 0.5)
+                    .attr('width', end_x - start_x + 0.5)
+                    .attr('height', 33 * (d.children_num+1) - 3 + 0.5)
+                    .attr('fill', '#fff')
+                    .attr('fill-opacity', 0.7)
+                    .attr('stroke', rect_color)
+                    .attr('stroke-width', 1)
+                    .attr('stroke-opacity', 1)
+                ;
+            }
+            // 処理時間のrect
+            cur_g
+                .append('rect')
+                .attr('x', PROCESS_NAME_COLUMN_WIDTH + start_x + 0.5)
+                .attr('y', base_y + 0.5)
+                .attr('width', end_x - start_x)
+                .attr('height', RESULT_RECT_HEIGHT)
+                .attr('fill', rect_color)
+                .attr('fill-opacity', 0.7)
+                .attr('stroke', rect_color)
+                .attr('stroke-width', 1)
+                .attr('stroke-opacity', 1)
+            ;
+            cur_g
+                .append('line')
+                .attr('x1', 45 + d.depth * 20 + 0.5)
+                .attr('x2', PROCESS_NAME_COLUMN_WIDTH + start_x + 0.5)
+                .attr('y1', base_y+18.5)
+                .attr('y2', base_y+18.5)
+                .attr('stroke', rect_color)
+                .attr('stroke-width', 1)
+            ;
+        });
 
         // 全体のrect
         let filter = svg
@@ -331,7 +409,7 @@ class EtlResult {
         ;
         svg
             .append('rect')
-            .attr('x', 0)
+            .attr('x', PROCESS_NAME_COLUMN_WIDTH)
             .attr('y', 0)
             .attr('width', SVG_WIDTH - (PADDING[3]+PROCESS_NAME_COLUMN_WIDTH+PADDING[1]))
             .attr('height', SVG_HEIGHT-(PADDING[0]+TIME_LINE_HEIGHT+PADDING[2]))
