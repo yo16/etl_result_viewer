@@ -38,11 +38,89 @@ class EtlResult {
             .attr('height', SVG_HEIGHT)
         ;
 
+        // 入力データを加工する
+        let data = this.edit_data(original_data);
+        console.log({data});
+
         // 日時関連のものを描く
-        this.draw_time_line(svg, original_data);
+        this.draw_time_line(svg, data);
 
         // プロセス定義関連のものを描く
-        this.draw_process_info(svg, original_data);
+        this.draw_process_info(svg, data);
+    }
+
+    // データの確認と加工
+    edit_data(original_data)
+    {
+        let ret_data = {
+            data: {},
+            min_dt: null,
+            max_dt: null,
+            hour_units: [],
+        };
+        
+        // データの期間を取得
+        let min_dt = null, max_dt = null;
+        for (let i=0; i<original_data.length; i++) {
+            let s = new Date(original_data[i].start);
+            let e = new Date(original_data[i].end);
+            if (i===0) {
+                min_dt = s;
+                max_dt = e;
+                continue;
+            }
+            if (s < min_dt) {min_dt = s;}
+            if (max_dt < e) {max_dt = e;}
+        }
+
+        // min/max
+        ret_data.min_dt = new Date(min_dt);
+        ret_data.max_dt = new Date(max_dt);
+
+        // １時間ごとの配列
+        min_dt.setMinutes(0);min_dt.setSeconds(0);min_dt.setMilliseconds(0);
+        max_dt.setMinutes(0);max_dt.setSeconds(0);max_dt.setMilliseconds(0);
+        max_dt.setHours(max_dt.getHours()+1);
+        let diff_hours = (max_dt.getTime() - min_dt.getTime())/(60*60*1000);
+        let cur_dt = min_dt;
+        for (let i=0; i<diff_hours+1; i++) {
+            cur_dt.setHours(cur_dt.getHours()+1)
+            ret_data.hour_units.push(new Date(cur_dt));
+        }
+
+        // dataをオブジェクト型に移し替える
+        for (let i=0; i<original_data.length; i++) {
+            console.assert('id' in original_data[i], '"id" is not defined.');
+            ret_data.data[original_data[i].id] = original_data[i];
+            // parent_id がなければ null を追加
+            if (!('parent_id' in original_data[i])) {
+                ret_data.data[original_data[i].id]['parent_id'] = null;
+            }
+        }
+
+        // データに階層番号(depth, 0, 1, ...)を付ける
+        Object.keys(ret_data.data)
+            .filter( k => ret_data.data[k].parent_id === null )
+            .forEach( k => {
+                ret_data.data[k]['depth'] = 0;
+            });
+        // 自分が親になっている子に、自分のdepth+1を設定
+        // 自分のプロパティに親である旨を設定
+        let set_depth = (d) => {
+            Object.keys(ret_data.data)
+                .filter( k => ret_data.data[k].parent_id === d.id)  // dが親
+                .forEach( k => {
+                    console.log(k);
+                    d['is_parent'] = 1;
+                    ret_data.data[k]['depth'] = d.depth + 1;
+                    set_depth(ret_data.data[k]);
+                });
+        };
+        Object.keys(ret_data.data)
+            .filter( k => ret_data.data[k].parent_id === null )
+            .forEach( k => set_depth(ret_data.data[k]));
+
+        return ret_data;
     }
 
     // 日時関連の描画
@@ -57,33 +135,6 @@ class EtlResult {
             .attr('width', SVG_WIDTH-(PADDING[1]+PROCESS_NAME_COLUMN_WIDTH+PADDING[3]))
             .attr('height', SVG_HEIGHT-(PADDING[0]+PADDING[2]))
         ;
-        
-        // データの期間を取得
-        let min_dt = null, max_dt = null;
-        for (let i=0; i<data.length; i++) {
-            let s = new Date(data[i].start);
-            let e = new Date(data[i].end);
-            if (i===0) {
-                min_dt = s;
-                max_dt = e;
-                continue;
-            }
-            if (s < min_dt) {min_dt = s;}
-            if (max_dt < e) {max_dt = e;}
-        }
-        // 時に丸める
-        min_dt.setMinutes(0);min_dt.setSeconds(0);min_dt.setMilliseconds(0);
-        max_dt.setMinutes(0);max_dt.setSeconds(0);max_dt.setMilliseconds(0);
-        max_dt.setHours(max_dt.getHours()+1);
-        // 時間の差
-        let diff_hours = (max_dt.getTime() - min_dt.getTime())/(60*60*1000);
-
-        let cur_dt = min_dt;
-        let dts = [];
-        for (let i=0; i<diff_hours; i++) {
-            cur_dt.setHours(cur_dt.getHours()+1)
-            dts.push(new Date(cur_dt));
-        }
 
         // 縦線
         const timeline_bar_g = svg
@@ -92,13 +143,13 @@ class EtlResult {
             .attr('stroke-width', 1)
             .attr('stroke', '#CCC')
         ;
-        for (let i=0; i<dts.length; i++) {
+        for (let i=0; i<data.hour_units.length; i++) {
             const x = HOUR_WIDTH*i;
             timeline_bar_g
                 .append('line')
                 .attr('x1', x+0.5)
                 .attr('x2', x+0.5)
-                .attr('y1', (dts[i].getHours()===0)?8:HOUR_BAR_START)
+                .attr('y1', (data.hour_units[i].getHours()===0)?8:HOUR_BAR_START)
                 .attr('y2', SVG_HEIGHT-(PADDING[0]+PADDING[2]))
             ;
         }
@@ -122,13 +173,17 @@ class EtlResult {
             .attr('stroke-width', 1)
             .attr('fill', '#999')
         ;
-        for (let i=0; i<dts.length; i++) {
+        for (let i=0; i<data.hour_units.length; i++) {
             const x = HOUR_WIDTH*i;
-            if ( dts[i].getHours() === 0 ) {
+            if ( data.hour_units[i].getHours() === 0 ) {
                 // y/m/d
                 timeline_text_g
                     .append('text')
-                    .text(dts[i].getFullYear()+'/'+(dts[i].getMonth()+1)+'/'+dts[i].getDay())
+                    .text(
+                        data.hour_units[i].getFullYear() + '/' +
+                        (data.hour_units[i].getMonth()+1) + '/' +
+                        data.hour_units[i].getDay()
+                    )
                     .attr('x', x+5)
                     .attr('y', 18)
                     .attr('font-size', 10)
@@ -137,7 +192,7 @@ class EtlResult {
             // h
             timeline_text_g
                 .append('text')
-                .text(dts[i].getHours())
+                .text(data.hour_units[i].getHours())
                 .attr('x', x+5)
                 .attr('y', TIME_LINE_HEIGHT-7)
                 .attr('font-size', 10)
@@ -147,7 +202,7 @@ class EtlResult {
     }
 
     // プロセス定義関連のものを描く
-    draw_process_info(top_svg, original_data)
+    draw_process_info(top_svg, data)
     {
         // ここでのsvg
         let svg = top_svg
@@ -188,38 +243,6 @@ class EtlResult {
             .attr('fill', '#999')
         ;
 
-
-        // データに階層番号(depth, 0, 1, ...)を付ける
-        let data = {};   // idをキーに取り出せるようにする
-        for (let i=0; i<original_data.length; i++) {
-            console.assert('id' in original_data[i], '"id" is not defined.');
-            data[original_data[i].id] = original_data[i];
-            if (!('parent_id' in original_data[i])) {
-                data[original_data[i].id]['parent_id'] = null;
-            }
-        }
-        let top_key = [];
-        Object.keys(data).forEach( k => {
-            if (data[k].parent_id === null) {
-                data[k]['depth'] = 0;
-                top_key.push(data[k].id);
-            }
-        });
-        // 自分が親になっている子に、自分のdepth+1を設定
-        // 自分のプロパティに親である旨を設定
-        let set_depth = (d) => {
-            Object.keys(data).forEach( k => {
-                if (data[k].parent_id === d.id ) {
-                    d['is_parent'] = 1;
-                    data[k]['depth'] = d.depth + 1;
-                    set_depth(data[k]);
-                }
-            })
-        };
-        for ( let i=0; i<top_key.length; i++ ) {
-            set_depth(data[top_key[i]]);
-        }
-
         // 線
 
         // rect
@@ -241,6 +264,8 @@ class EtlResult {
                 .append('g')
                 .attr('class', 'one_process')
             ;
+
+            // アイコン
             let icon_id = d.is_parent ? '#folder': '#gear';
             cur_g
                 .append('use')
@@ -248,6 +273,8 @@ class EtlResult {
                 .attr('x', 25 + d.depth * 20)
                 .attr('y', 38 + i * 33)
             ;
+
+            // テキスト
             cur_g
                 .append('text')
                 .text(d.title)
@@ -257,9 +284,11 @@ class EtlResult {
                 .attr('fill', '#333')
             ;
 
+            // 線
+
         }
-        Object.keys(data).forEach( (k,i) => {
-            draw_one_process(svg, data[k], i)
+        Object.keys(data.data).forEach( (k,i) => {
+            draw_one_process(svg, data.data[k], i)
         });
     }
 }
