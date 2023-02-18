@@ -5,7 +5,7 @@
     <meta charset="utf-8">
 	<title>etl_result_viewer sample</title>
 	<script type="text/javascript" src="./js/d3.min.js"></script>
-	<script type="text/javascript" src="../src/etl_result_viewer.js"></script>
+	<script type="text/javascript" src="../node/dist/etl_result_viewer.js"></script>
 	<style>
 
 	</style>
@@ -53,8 +53,7 @@
             },
 		];
 
-		let er = new EtlResult('#etl_result1');
-		er.data(etl_result_datas);
+        etl_result_viewer('#etl_result1', etl_result_datas);
 	});
 	</script>
 </head>
