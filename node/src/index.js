@@ -6,6 +6,8 @@ Released under the MIT license.
 */
 const style = require('./style/main.css');
 
+
+
 const bg = require('./background');
 const cv = require('./common_value');
 
