@@ -141,7 +141,6 @@ function _draw_background(svg_top) {
         ;
     }
 
-
     return svg_whole;
 }
 
