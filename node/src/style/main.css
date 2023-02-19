@@ -6,3 +6,10 @@ css
     fill: #EEE;
     opacity: 70%;
 }
+#etl_result_job_name_rect {
+    fill: #EEE;
+    opacity: 70%;
+}
+#etl_result_result_rect {
+    fill: #CCC;
+}

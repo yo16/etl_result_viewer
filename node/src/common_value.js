@@ -62,5 +62,9 @@ module.exports = {
         DATETIME_AREA: "etl_result_datearea",
         DATETIME_AREA_RECT: "etl_result_datearea_rect",
         JOBNAME_AREA: "etl_result_jobname",
+        JOBNAME_AREA_RECT: "etl_result_job_name_rect",
+        RESULT_AREA: "etl_result_result",
+        RESULT_AREA_RECT: "etl_result_result_rect",
+        RESULT_AREA_FILTER: "etl_result_result_filter",
     },
 };

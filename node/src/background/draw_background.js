@@ -62,7 +62,7 @@ function _draw_background(svg_top) {
     }
 
     // ジョブ名エリア を描画
-    svg_date = svg_whole
+    svg_jobname = svg_whole
         .append('svg')
         .attr('id', cv.id.JOBNAME_AREA)
         .attr('x', cv.pos.jobname_area.X)
@@ -70,8 +70,16 @@ function _draw_background(svg_top) {
         .attr('width', cv.pos.jobname_area.WIDTH)
         .attr('height', cv.pos.jobname_area.HEIGHT)
     ;
+    svg_jobname
+        .append('rect')
+        .attr('id', cv.id.JOBNAME_AREA_RECT)
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', cv.pos.jobname_area.WIDTH)
+        .attr('height', cv.pos.jobname_area.HEIGHT)
+    ;
     if (isDevelopment) {
-        svg_date
+        svg_jobname
             .append('rect')
             .attr('x', 0)
             .attr('y', 0)
@@ -84,7 +92,7 @@ function _draw_background(svg_top) {
     }
 
     // 結果エリア を描画
-    svg_date = svg_whole
+    svg_result = svg_whole
         .append('svg')
         .attr('id', cv.id.RESULT_AREA)
         .attr('x', cv.pos.result_area.X)
@@ -92,8 +100,36 @@ function _draw_background(svg_top) {
         .attr('width', cv.pos.result_area.WIDTH)
         .attr('height', cv.pos.result_area.HEIGHT)
     ;
+    let filter = svg_result
+        .append('filter')
+        .attr('id', cv.id.RESULT_AREA_FILTER)
+    filter
+        .append('feOffset')
+        .attr('dx', 0)
+        .attr('dy', 0)
+    ;
+    filter
+        .append('feGaussianBlur')
+        .attr('stdDeviation', 8)
+        .attr('result', 'offset-blur')
+    ;
+    filter
+        .append('feComposite')
+        .attr('operator', 'out')
+        .attr('in', 'SourceGraphic')
+        .attr('in2', 'offset-blur')
+    ;
+    svg_result
+        .append('rect')
+        .attr('id', cv.id.RESULT_AREA_RECT)
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', cv.pos.result_area.WIDTH)
+        .attr('height', cv.pos.result_area.HEIGHT)
+        .attr('filter', 'url(#'+cv.id.RESULT_AREA_FILTER+')')
+;
     if (isDevelopment) {
-        svg_date
+        svg_result
             .append('rect')
             .attr('x', 0)
             .attr('y', 0)
