@@ -13,3 +13,13 @@ css
 #etl_result_result_rect {
     fill: #CCC;
 }
+
+.datetime_bar {
+    stroke-width: 1;
+    stroke: #CCC;
+    shape-rendering: crispEdges;
+}
+.datetime_text {
+    font-size: 10pt;
+    fill: #999;
+}

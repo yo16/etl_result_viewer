@@ -33,7 +33,7 @@ function main(dom_id, data) {
     drwr.draw_background(svg);
 
     // エンティティを描画
-    
+    drwr.draw_jobs(result_objs)
 
 }
 

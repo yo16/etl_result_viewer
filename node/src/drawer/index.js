@@ -3,8 +3,10 @@
 背景部分の描画
 */
 
-const draw_bg = require('./background');
+const bg = require('./background');
+const job = require('./jobs');
 
 module.exports = {
-    draw_background: draw_bg.draw_background
+    draw_background: bg.draw_background,
+    draw_jobs: job.draw_jobs,
 }

@@ -72,4 +72,11 @@ module.exports = {
         'RUNNING': 1,
         'ERROR': 9,
     },
+    size: {
+        DATETIME_HOUR_BAR_DISTANCE: 100,
+        DATETIME_HOUR_BAR_START: 35,
+        DATETIME_TEXT_PADDING_LEFT: 5,
+        DATETIME_YMD_POS_Y: 18,
+        DATETIME_HOUR_POS_Y: 43,
+    }
 };
