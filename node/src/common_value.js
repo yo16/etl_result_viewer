@@ -67,4 +67,9 @@ module.exports = {
         RESULT_AREA_RECT: "etl_result_result_rect",
         RESULT_AREA_FILTER: "etl_result_result_filter",
     },
+    exec_status: {
+        'SUCCESS': 0,
+        'RUNNING': 1,
+        'ERROR': 9,
+    },
 };

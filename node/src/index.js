@@ -7,9 +7,10 @@ Released under the MIT license.
 const style = require('./style/main.css');
 
 
-
+const parser = require('./data_parser');
 const bg = require('./background');
 const cv = require('./common_value');
+const data_parser = require('./data_parser');
 
 
 // 描画メイン
@@ -18,6 +19,8 @@ function main(dom_id, data) {
     console.log({data});
 
     // パース
+    let result_objs = data_parser.parse(data)
+    console.log({result_objs})
 
     // 背景を描画
     const svg = d3.select(dom_id)
