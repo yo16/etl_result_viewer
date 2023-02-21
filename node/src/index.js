@@ -8,7 +8,7 @@ const style = require('./style/main.css');
 
 
 const parser = require('./data_parser');
-const bg = require('./background');
+const drwr = require('./drawer');
 const cv = require('./common_value');
 const data_parser = require('./data_parser');
 
@@ -19,18 +19,21 @@ function main(dom_id, data) {
     console.log({data});
 
     // パース
-    let result_objs = data_parser.parse(data)
+    let result_objs = parser.parse(data)
     console.log({result_objs})
 
-    // 背景を描画
+    // 描画するsvg要素を作成
     const svg = d3.select(dom_id)
         .append('svg')
         .attr('width', cv.pos.svg.WIDTH)
         .attr('height', cv.pos.svg.HEIGHT)
     ;
-    bg.draw_background(svg);
+
+    // 背景を描画
+    drwr.draw_background(svg);
 
     // エンティティを描画
+    
 
 }
 
